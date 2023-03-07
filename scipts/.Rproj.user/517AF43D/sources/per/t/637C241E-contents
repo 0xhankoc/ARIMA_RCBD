@@ -1,0 +1,234 @@
+---
+title: "INDE316_W4_RCodes"
+author: "Tianchen Sun"
+date: "2023-01-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+############################################################
+###  Change the working directory for the Markdown file  ###
+############################################################
+# knitr::opts_knit$set(root.dir = "C:/Users/TC/OneDrive - UW/UW/INDE 316-2023/RSession/Week4")
+```
+
+
+
+## Illustration of QQ plots
+```{r}
+# Data NOT violating ANOVA assumptions
+
+norm_data = rnorm(100)
+independent_data = c(rep(1, 100/4), rep(2, 100/4), rep(3, 100/4), rep(4, 100/4))
+norm_DataFrame = data.frame(norm_data, independent_data)
+
+hist(aov(norm_data ~ independent_data, norm_DataFrame)$res)         # Histogram of residuals
+
+par(mfrow=c(2,2))
+plot(aov(norm_data ~ independent_data, norm_DataFrame))
+```
+
+
+```{r}
+# Data violating ANOVA assumptions
+
+lognorm_data = c(rpois(25, 4), rpois(25, 2), rpois(25, 10), rpois(25, 30))^2
+lognorm_DataFrame = data.frame(lognorm_data, independent_data)
+
+hist(aov(lognorm_data ~ independent_data, lognorm_DataFrame)$res)        # Histogram of residuals
+
+par(mfrow=c(2,2))
+plot(aov(lognorm_data ~ independent_data, lognorm_DataFrame))
+```
+
+
+
+```{r}
+library(agricolae)         # Load 'agricolae' package for LSD.test function
+```
+
+## Tire example - RCBD ANOVA
+```{r}
+### Read data from CSV file
+# If the CSV file is in the same folder with the current R markdown file,
+# the path location is not needed.
+# MAKE SURE to save the R markdown file to the preferred folder first!
+tire_data_RCBD_long = read.csv("W4_tire_RCBD_data.csv")
+
+# If the CSV file is NOT in the same folder with the current R markdown file,
+# the path location is needed.
+# Change the file path to the file location in your computer!
+tire_data_RCBD_long = read.csv("C:/Users/TC/OneDrive - UW/UW/INDE 316-2023/RSession/Week4/W4_tire_RCBD_data.csv") 
+
+# Change the variable columns to "factor" data type
+tire_data_RCBD_long[c('cars', 'brand')] = lapply(tire_data_RCBD_long[c('cars', 'brand')], as.factor)
+```
+
+
+```{r}
+####################################################
+## OPTIONAL: Generate CSV data file from scratch  ##
+####################################################
+
+# Treatment, as "factor" type
+brand = as.factor(c("B","D","A","C",
+                    "C","C","B","D",
+                    "A","B","D","B",
+                    "D","A","C","A")) 
+
+# Block, as "factor" type
+cars = as.factor(rep(seq(1, 4, 1), 4)) # rep(A, B) -- replicate A for B times 
+                                       # seq(C, D, E) -- generate a sequence
+                                       #                 starting from C
+                                       #                 ending at D
+                                       #                 increment by E
+# Response
+thickness = c(7,14,7,14,
+              10,18,12,9,
+              5,10,11,8,
+              10,10,11,8)
+
+# Construct data frame
+tire_data_RCBD_long = data.frame(cars, brand, thickness)
+
+# Export the data frame as a CSV file
+write.csv(tire_data_RCBD_long,         # name of the data frame to be exported
+          "W4_tire_RCBD_data.csv",     # name of the csv file
+          row.names = F)               # set as F to export without row index
+```
+
+
+```{r}
+# RCBD ANOVA
+
+aov_tire_block = aov(thickness ~ brand + cars, data = tire_data_RCBD_long)
+summary(aov_tire_block)
+
+```
+
+
+```{r}
+# Post hoc analysis
+# Tukey's test
+tukey_tire = TukeyHSD(aov_tire_block)
+tukey_tire$brand
+
+# LSD test
+lsd_tire = LSD.test(aov_tire_block, 'brand')
+lsd_tire$groups[levels(tire_data_RCBD_long$brand),]
+
+```
+
+
+
+## Tire example - Latin square ANOVA
+```{r}
+### Read data from CSV file
+
+tire_data_latinsquare_long = read.csv("W4_tire_latinsquare_data.csv")
+
+tire_data_latinsquare_long = read.csv("C:/Users/TC/OneDrive - UW/UW/INDE 316-2023/RSession/Week4/W4_tire_latinsquare_data.csv")
+
+tire_data_latinsquare_long[c('cars', 'position', 'brand')] = lapply(tire_data_latinsquare_long[c('cars', 'position', 'brand')], as.factor)
+```
+
+```{r}
+####################################################
+## OPTIONAL: Generate CSV data file from scratch  ##
+####################################################
+
+# Treatment, as "factor" type
+brand = as.factor(c("C","D","A","B",
+                    "B","C","D","A",
+                    "A","B","C","D",
+                    "D","A","B","C"))
+
+# Block 1, as "factor" type
+cars = as.factor(rep(seq(1,4,1), 4))   # rep(A, B) -- replicate A for B times 
+                                       # seq(C, D, E) -- generate a sequence
+                                       #                 starting from C
+                                       #                 ending at D
+                                       #                 increment by E
+
+# Block 2, as "factor" type
+position = as.factor(c(rep(1,4), rep(2,4), rep(3,4), rep(4,4)))
+
+# Response
+thickness = c(10,14,7,8,
+              7,18,11,8,
+              5,10,11,9,
+              10,10,12,14)
+
+# Construct data frame
+tire_data_latinsquare_long = data.frame(cars, position, brand, thickness)
+
+# Export the data frame as a CSV file
+write.csv(tire_data_latinsquare_long,       # name of the data frame to be exported
+          "W4_tire_latinsquare_data.csv",   # name of the csv file
+          row.names = F)                    # set as F to export without row index
+```
+
+
+
+```{r}
+# Latin square ANOVA
+
+aov_tire_latin_square = aov(thickness ~ brand + cars + position, data = tire_data_latinsquare_long)
+summary(aov_tire_latin_square)
+
+```
+
+
+```{r}
+# Post hoc analysis
+# Tukey's test
+tukey_tire = TukeyHSD(aov_tire_latin_square)
+tukey_tire$brand
+
+# LSD test
+lsd_tire = LSD.test(aov_tire_latin_square, 'brand')
+lsd_tire$groups[levels(tire_data_latinsquare_long$brand),]
+```
+
+
+## Chemist example - RCBD ANOVA
+```{r}
+####################################################
+## OPTIONAL: Generate CSV data file from scratch  ##
+####################################################
+
+# Treatment, as "factor" type
+Chemist = as.factor(c(rep(1,5), rep(2,5), rep(3,5), rep(4,5)))
+    # rep(A, B) -- replicate A for B times
+    # seq(C, D, E) -- generate a sequence
+    #                 starting from C
+    #                 ending at D
+    #                 increment by E
+
+# Block, as "factor" type
+Bolt = as.factor(rep(seq(1,5,1), 4))
+
+# Response
+Percentage = c(73, 68, 74, 71, 67,
+               73, 67, 75, 72, 70,
+               75, 68, 78, 73, 68,
+               73, 71, 75, 75, 69)
+
+# Construct data frame
+chemist_data_long = data.frame(Chemist, Bolt, Percentage)
+
+# Export the data frame as a CSV file
+# write.csv(chemist_data_long, "W4_chemist_data.csv", row.names = F)
+
+```
+
+
+
+```{r}
+# RCBD ANOVA
+
+
+```
+
