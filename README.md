@@ -1,2 +1,2 @@
 # ARIMA_ANOVA_RCBD
- Randomized Complete Block Design ANOVA of ARIMA forecast for various stocks
+Are some markets more random than the others? ANOVA analysis of randomness in different Index Funds
